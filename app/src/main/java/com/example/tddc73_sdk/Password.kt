@@ -1,54 +1,49 @@
 package com.example.tddc73_sdk
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Dangerous
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.RemoveCircle
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material.icons.rounded.RemoveCircle
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.unit.dp
 
-enum class displayType{
+enum class DisplayType{
+    Both,
     Text,
     Meter,
     Custom
 }
 
-interface IPassword {
-    var maxStrength : Int
-    // display type
-    var display : @Composable ()->Unit
-    // req for one more strength level
-    //var reqForStrength : List<(password:String)->Boolean>
-
-}
-
-class PasswordRequirement(val condition : (String) -> Boolean = { true }, val description : String = ""){}
+class PasswordRequirement(val condition : (String) -> Boolean = { true }, val description : String = "", val required : Boolean){}
 
 @OptIn(ExperimentalMaterial3Api::class)
 class Password(var reqForStrength: List<PasswordRequirement>) {
-    var display : displayType = displayType.Text
 
-    @Composable fun CreatePasswordField(customDisplay : @Composable ()->Unit = {}){
+    @Composable fun CreatePasswordField(display : DisplayType = DisplayType.Both ,customDisplay : @Composable ()->Unit = {}){
         var text by remember { mutableStateOf("") }
         var passwordVisible by rememberSaveable { mutableStateOf(false) }
         TextField(
@@ -72,22 +67,17 @@ class Password(var reqForStrength: List<PasswordRequirement>) {
             }
         )
         when(display){
-            displayType.Meter -> {
-                //add meter
-
+            DisplayType.Both -> {
+                TextDisplay(text)
+                MeterDisplay(text)
             }
-            displayType.Text -> {
-                Column(){
-                    for (req in this@Password.reqForStrength){
-                        Row {
-                            Icon(imageVector = if(req.condition(text)) Icons.Filled.CheckCircle else Icons.Filled.RemoveCircle, contentDescription = "Check OK", tint = if(req.condition(text)) Color(0,200,0) else Color.Red)
-                            Text(text = req.description)
-                        }
-
-                    }
-                }
+            DisplayType.Meter -> {
+                MeterDisplay(text)
             }
-            displayType.Custom -> {
+            DisplayType.Text -> {
+                TextDisplay(text)
+            }
+            DisplayType.Custom -> {
                 if (customDisplay == {}){
                     throw Exception("displayType.Custom chosen but no customDisplay was specified")
                 }
@@ -95,6 +85,64 @@ class Password(var reqForStrength: List<PasswordRequirement>) {
             }
 
             else -> {}
+        }
+    }
+    @Composable
+    fun MeterDisplay(
+        password: String,
+        modifier: Modifier = Modifier,
+    ) {
+        val passwordStrength by remember(GetPasswordStrength(password)) {
+            mutableIntStateOf(((GetPasswordStrength(password)*100f).toInt()))
+        }
+
+        LinearProgressIndicator(
+            progress = passwordStrength / 100f,
+            color = getPasswordStrengthColor(passwordStrength),
+            modifier = modifier
+                .height(8.dp)
+        )
+    }
+    private fun getPasswordStrengthColor(strength: Int): Color {
+        return when{
+            strength < 30 -> Color.Red
+            strength < 60 -> Color.Yellow
+            else -> Color.Green
+        }
+
+
+    }
+
+    private fun GetPasswordStrength(text: String) : Float{
+        var okReqs : Int = 0
+        for (req in this@Password.reqForStrength) {
+            if (req.condition(text)){
+                okReqs += 1
+            }
+        }
+        return okReqs.toFloat()/this@Password.reqForStrength.count().toFloat()
+    }
+
+    @Composable
+    fun TextDisplay(text: String) {
+        Column() {
+            for (req in this@Password.reqForStrength) {
+                Row {
+                    val icon: ImageVector =
+                        if (req.condition(text)) Icons.Filled.CheckCircle else if (req.required) Icons.Filled.RemoveCircle else Icons.Filled.Info
+                    val tintColor: Color =
+                        if (req.condition(text)) Color(0, 200, 0) else if (req.required) Color(
+                            200,
+                            0,
+                            0
+                        ) else Color(0, 0, 200)
+                    Icon(
+                        imageVector = icon, contentDescription = "Requirement icon",
+                        tint = tintColor
+                    )
+                    Text(text = req.description)
+                }
+            }
         }
     }
     /*
