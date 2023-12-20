@@ -25,7 +25,7 @@ class MainActivity : ComponentActivity() {
             val p = Password(reqs)
             TDDC73SDKTheme {
                 Column (modifier = Modifier.fillMaxWidth()){
-                    p.CreatePasswordField(DisplayType.Custom)
+                    p.CreatePasswordField(DisplayType.Both)
                 }
                 // A surface container using the 'background' color from the theme
 

@@ -43,6 +43,15 @@ class PasswordRequirement(val condition : (String) -> Boolean = { true }, val de
 @OptIn(ExperimentalMaterial3Api::class)
 class Password(var reqForStrength: List<PasswordRequirement>) {
 
+    /**
+     * Main function that creates and displays a password input field with strength visualization options.
+     *
+     * @param display The type of display to show, including Both (text and meter), Meter only, Text only, or Custom.
+     * @param customDisplay An optional custom composable function for a user-defined display.
+     *
+     * @see DisplayType
+     * @see CreatePasswordStrength
+     */
     @Composable fun CreatePasswordField(display : DisplayType = DisplayType.Both ,customDisplay : @Composable ()->Unit = {}){
         var text by remember { mutableStateOf("") }
         var passwordVisible by rememberSaveable { mutableStateOf(false) }
@@ -66,19 +75,44 @@ class Password(var reqForStrength: List<PasswordRequirement>) {
                 }
             }
         )
-        when(display){
+        CreatePasswordStrength(display, text, customDisplay)
+    }
+
+    /**
+     * Creates and displays password strength using chosen DisplayType.
+     *
+     * @param display The type of display to show, including Both (text and meter), Meter only, Text only, or Custom.
+     * @param text The password text to evaluate against strength requirements.
+     * @param customDisplay An optional custom composable function for a user-defined display.
+     *
+     * @throws IllegalArgumentException if [customDisplay] is specified for DisplayType.Custom but not provided.
+     *
+     * @see DisplayType
+     * @see TextDisplay
+     * @see MeterDisplay
+     */
+    @Composable
+    fun CreatePasswordStrength(
+        display: DisplayType,
+        text: String,
+        customDisplay: @Composable () -> Unit
+    ) {
+        when (display) {
             DisplayType.Both -> {
                 TextDisplay(text)
                 MeterDisplay(text)
             }
+
             DisplayType.Meter -> {
                 MeterDisplay(text)
             }
+
             DisplayType.Text -> {
                 TextDisplay(text)
             }
+
             DisplayType.Custom -> {
-                if (customDisplay == {}){
+                if (customDisplay == {}) {
                     throw Exception("displayType.Custom chosen but no customDisplay was specified")
                 }
                 customDisplay()
@@ -87,6 +121,16 @@ class Password(var reqForStrength: List<PasswordRequirement>) {
             else -> {}
         }
     }
+
+    /**
+     * Display a password strength meter as a linear progress indicator.
+     *
+     * @param password The password text to evaluate for strength.
+     * @param modifier An optional [Modifier] for customization.
+     *
+     * @see GetPasswordStrength
+     * @see getPasswordStrengthColor
+     */
     @Composable
     fun MeterDisplay(
         password: String,
@@ -109,8 +153,6 @@ class Password(var reqForStrength: List<PasswordRequirement>) {
             strength < 60 -> Color.Yellow
             else -> Color.Green
         }
-
-
     }
 
     private fun GetPasswordStrength(text: String) : Float{
@@ -123,6 +165,15 @@ class Password(var reqForStrength: List<PasswordRequirement>) {
         return okReqs.toFloat()/this@Password.reqForStrength.count().toFloat()
     }
 
+    /**
+     * Display password strength requirements as a list of icons and descriptions.
+     *
+     * @param text The password text to evaluate against strength requirements.
+     *
+     * @throws IllegalArgumentException if the [reqForStrength] property is not initialized.
+     *
+     * @see Password.reqForStrength
+     */
     @Composable
     fun TextDisplay(text: String) {
         Column() {
@@ -145,21 +196,4 @@ class Password(var reqForStrength: List<PasswordRequirement>) {
             }
         }
     }
-    /*
-    @Composable fun CreateDisplayStrength(display : displayType){
-        when(display){
-            displayType.Meter -> {
-                //add meter
-            }
-            displayType.Text -> {
-
-            }
-            displayType.Custom -> {
-                customDisplay()
-            }
-
-            else -> {}
-        }
-    }
-     */
 }
