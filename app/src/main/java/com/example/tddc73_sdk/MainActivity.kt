@@ -23,10 +23,17 @@ class MainActivity : ComponentActivity() {
             reqs.add(PasswordRequirement(::req1,"Must have at least 6 length",true))
             reqs.add(PasswordRequirement(::req2,"Include special character",false))
             val p = Password(reqs)
+
+            val accountReg : AccountRegistration = AccountRegistration()
+
             TDDC73SDKTheme {
+                accountReg.AddField("Name",FieldType.NameTextField,true)
+                /*
                 Column (modifier = Modifier.fillMaxWidth()){
                     p.CreatePasswordField(DisplayType.Both)
                 }
+
+                 */
                 // A surface container using the 'background' color from the theme
 
             }

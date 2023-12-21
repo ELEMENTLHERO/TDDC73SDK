@@ -128,7 +128,7 @@ class Password(var reqForStrength: List<PasswordRequirement>) {
      * @param password The password text to evaluate for strength.
      * @param modifier An optional [Modifier] for customization.
      *
-     * @see GetPasswordStrength
+     * @see getPasswordStrength
      * @see getPasswordStrengthColor
      */
     @Composable
@@ -136,8 +136,8 @@ class Password(var reqForStrength: List<PasswordRequirement>) {
         password: String,
         modifier: Modifier = Modifier,
     ) {
-        val passwordStrength by remember(GetPasswordStrength(password)) {
-            mutableIntStateOf(((GetPasswordStrength(password)*100f).toInt()))
+        val passwordStrength by remember(getPasswordStrength(password)) {
+            mutableIntStateOf(((getPasswordStrength(password)*100f).toInt()))
         }
 
         LinearProgressIndicator(
@@ -155,7 +155,7 @@ class Password(var reqForStrength: List<PasswordRequirement>) {
         }
     }
 
-    private fun GetPasswordStrength(text: String) : Float{
+    private fun getPasswordStrength(text: String) : Float{
         var okReqs : Int = 0
         for (req in this@Password.reqForStrength) {
             if (req.condition(text)){
