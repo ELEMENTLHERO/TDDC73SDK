@@ -26,17 +26,20 @@ class MainActivity : ComponentActivity() {
 
             val accountReg : AccountRegistration = AccountRegistration()
 
-            TDDC73SDKTheme {
+            Column {
                 accountReg.AddField("Name",FieldType.NameTextField,true)
-                /*
-                Column (modifier = Modifier.fillMaxWidth()){
-                    p.CreatePasswordField(DisplayType.Both)
-                }
+                accountReg.AddField("Email",FieldType.EmailTextField,false)
+                accountReg.AddField("Telephone",FieldType.NumberTextField,false)
+                accountReg.AddField("Address",FieldType.AddressTextField,false)
+                accountReg.AddField("Non Mandatory Password",FieldType.StandardPassword,false)
 
-                 */
-                // A surface container using the 'background' color from the theme
+                accountReg.AddDropDown("Country of birth", listOf("Sweden","EU excluding Sweden","Non EU"),true)
+
+                p.CreatePasswordField(DisplayType.Both,"Strong password")
 
             }
+
+
         }
     }
 }

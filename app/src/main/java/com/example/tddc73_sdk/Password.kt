@@ -1,8 +1,10 @@
 package com.example.tddc73_sdk
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
@@ -52,29 +54,33 @@ class Password(var reqForStrength: List<PasswordRequirement>) {
      * @see DisplayType
      * @see CreatePasswordStrength
      */
-    @Composable fun CreatePasswordField(display : DisplayType = DisplayType.Both ,customDisplay : @Composable ()->Unit = {}){
+    @Composable fun CreatePasswordField(display : DisplayType = DisplayType.Both, label: String = "" ,customDisplay : @Composable ()->Unit = {}){
         var text by remember { mutableStateOf("") }
         var passwordVisible by rememberSaveable { mutableStateOf(false) }
-        TextField(
-            value = text,
-            onValueChange = { text = it },
-            label = { Text("Label") },
-            placeholder = {
-                Text("Enter Password")
-            },
-            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            trailingIcon = {
-                val image = if (passwordVisible)
-                    Icons.Filled.Visibility
-                else Icons.Filled.VisibilityOff
-                val description = if (passwordVisible) "Hide password" else "Show password"
+        Box(modifier = Modifier.padding(5.dp)) {
+            TextField(
+                value = text,
+                onValueChange = { text = it },
+                label = { Text(label) },
+                placeholder = {
+                    Text("Enter Password")
+                },
+                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                isError = !isAllRequirementsFulfilled(text),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                trailingIcon = {
+                    val image = if (passwordVisible)
+                        Icons.Filled.Visibility
+                    else Icons.Filled.VisibilityOff
+                    val description = if (passwordVisible) "Hide password" else "Show password"
 
-                IconButton(onClick = {passwordVisible = !passwordVisible}){
-                    Icon(imageVector  = image, description)
+                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                        Icon(imageVector = image, description)
+                    }
                 }
-            }
-        )
+            )
+        }
+
         CreatePasswordStrength(display, text, customDisplay)
     }
 
@@ -97,28 +103,34 @@ class Password(var reqForStrength: List<PasswordRequirement>) {
         text: String,
         customDisplay: @Composable () -> Unit
     ) {
-        when (display) {
-            DisplayType.Both -> {
-                TextDisplay(text)
-                MeterDisplay(text)
-            }
+        Box() {
 
-            DisplayType.Meter -> {
-                MeterDisplay(text)
-            }
+            when (display) {
+                DisplayType.Both -> {
+                    Column {
+                        TextDisplay(text)
+                        MeterDisplay(text)
+                    }
 
-            DisplayType.Text -> {
-                TextDisplay(text)
-            }
-
-            DisplayType.Custom -> {
-                if (customDisplay == {}) {
-                    throw Exception("displayType.Custom chosen but no customDisplay was specified")
                 }
-                customDisplay()
-            }
 
-            else -> {}
+                DisplayType.Meter -> {
+                    MeterDisplay(text)
+                }
+
+                DisplayType.Text -> {
+                    TextDisplay(text)
+                }
+
+                DisplayType.Custom -> {
+                    if (customDisplay == {}) {
+                        throw Exception("displayType.Custom chosen but no customDisplay was specified")
+                    }
+                    customDisplay()
+                }
+
+                else -> {}
+            }
         }
     }
 
@@ -139,13 +151,15 @@ class Password(var reqForStrength: List<PasswordRequirement>) {
         val passwordStrength by remember(getPasswordStrength(password)) {
             mutableIntStateOf(((getPasswordStrength(password)*100f).toInt()))
         }
+        Box(modifier = Modifier.padding(5.dp)){
+            LinearProgressIndicator(
+                progress = passwordStrength / 100f,
+                color = getPasswordStrengthColor(passwordStrength),
+                modifier = modifier
+                    .height(8.dp)
+            )
+        }
 
-        LinearProgressIndicator(
-            progress = passwordStrength / 100f,
-            color = getPasswordStrengthColor(passwordStrength),
-            modifier = modifier
-                .height(8.dp)
-        )
     }
     private fun getPasswordStrengthColor(strength: Int): Color {
         return when{
@@ -153,6 +167,16 @@ class Password(var reqForStrength: List<PasswordRequirement>) {
             strength < 60 -> Color.Yellow
             else -> Color.Green
         }
+    }
+
+    private fun isAllRequirementsFulfilled(text: String): Boolean{
+        var isAllFulfilled : Boolean = true
+        for (req in this@Password.reqForStrength) {
+            if (req.required && !req.condition(text)){
+                isAllFulfilled = false
+            }
+        }
+        return isAllFulfilled
     }
 
     private fun getPasswordStrength(text: String) : Float{
@@ -178,7 +202,7 @@ class Password(var reqForStrength: List<PasswordRequirement>) {
     fun TextDisplay(text: String) {
         Column() {
             for (req in this@Password.reqForStrength) {
-                Row {
+                Row (modifier = Modifier.padding(5.dp)){
                     val icon: ImageVector =
                         if (req.condition(text)) Icons.Filled.CheckCircle else if (req.required) Icons.Filled.RemoveCircle else Icons.Filled.Info
                     val tintColor: Color =
