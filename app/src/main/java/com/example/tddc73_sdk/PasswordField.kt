@@ -19,6 +19,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -42,9 +43,23 @@ enum class DisplayType{
 
 class PasswordRequirement(val condition : (String) -> Boolean = { true }, val description : String = "", val required : Boolean){}
 
+/**
+ * Class representing a password field with customizable password strength requirements.
+ *
+ * @property reqForStrength A list of PasswordRequirement instances defining the requirements for password strength.
+ *                          These requirements determine the complexity of the password.
+ * @property required A Boolean indicating whether the password field is required. Default is true.
+ *                    If true, the password field must be filled; otherwise, it's optional.
+ *
+ * @constructor Creates a PasswordField with specified password requirements, required state, and initial error state.
+ *
+ * @see PasswordRequirement
+ * @see MutableState
+ * @see ExperimentalMaterial3Api
+ */
 @OptIn(ExperimentalMaterial3Api::class)
-class Password(var reqForStrength: List<PasswordRequirement>) {
-
+class PasswordField(var reqForStrength: List<PasswordRequirement>, var required: Boolean = true) {
+    var isErrorState: MutableState<Boolean> = mutableStateOf(required)
     /**
      * Main function that creates and displays a password input field with strength visualization options.
      *
@@ -54,19 +69,20 @@ class Password(var reqForStrength: List<PasswordRequirement>) {
      * @see DisplayType
      * @see CreatePasswordStrength
      */
-    @Composable fun CreatePasswordField(display : DisplayType = DisplayType.Both, label: String = "" ,customDisplay : @Composable ()->Unit = {}){
+    @Composable fun CreatePasswordField(display : DisplayType = DisplayType.Both, label: String = "", customDisplay : @Composable ()->Unit = {}){
         var text by remember { mutableStateOf("") }
         var passwordVisible by rememberSaveable { mutableStateOf(false) }
         Box(modifier = Modifier.padding(5.dp)) {
             TextField(
                 value = text,
-                onValueChange = { text = it },
+                onValueChange = { text = it
+                    isErrorState.value = !isAllRequirementsFulfilled(text)},
                 label = { Text(label) },
                 placeholder = {
                     Text("Enter Password")
                 },
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                isError = !isAllRequirementsFulfilled(text),
+                isError = isErrorState.value,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 trailingIcon = {
                     val image = if (passwordVisible)
@@ -171,7 +187,7 @@ class Password(var reqForStrength: List<PasswordRequirement>) {
 
     private fun isAllRequirementsFulfilled(text: String): Boolean{
         var isAllFulfilled : Boolean = true
-        for (req in this@Password.reqForStrength) {
+        for (req in this@PasswordField.reqForStrength) {
             if (req.required && !req.condition(text)){
                 isAllFulfilled = false
             }
@@ -181,12 +197,12 @@ class Password(var reqForStrength: List<PasswordRequirement>) {
 
     private fun getPasswordStrength(text: String) : Float{
         var okReqs : Int = 0
-        for (req in this@Password.reqForStrength) {
+        for (req in this@PasswordField.reqForStrength) {
             if (req.condition(text)){
                 okReqs += 1
             }
         }
-        return okReqs.toFloat()/this@Password.reqForStrength.count().toFloat()
+        return okReqs.toFloat()/this@PasswordField.reqForStrength.count().toFloat()
     }
 
     /**
@@ -196,12 +212,12 @@ class Password(var reqForStrength: List<PasswordRequirement>) {
      *
      * @throws IllegalArgumentException if the [reqForStrength] property is not initialized.
      *
-     * @see Password.reqForStrength
+     * @see PasswordField.reqForStrength
      */
     @Composable
     fun TextDisplay(text: String) {
         Column() {
-            for (req in this@Password.reqForStrength) {
+            for (req in this@PasswordField.reqForStrength) {
                 Row (modifier = Modifier.padding(5.dp)){
                     val icon: ImageVector =
                         if (req.condition(text)) Icons.Filled.CheckCircle else if (req.required) Icons.Filled.RemoveCircle else Icons.Filled.Info
