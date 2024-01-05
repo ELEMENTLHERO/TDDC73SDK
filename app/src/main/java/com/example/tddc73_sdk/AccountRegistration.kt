@@ -44,6 +44,7 @@ class AccountRegistration(){
         fields[nameOfField] = remember {mutableStateOf("")}
         val text : MutableState<String>? = fields[nameOfField]
         if(typeOfField == FieldType.StandardPassword){
+
             val reqs: MutableList<PasswordRequirement> = mutableListOf()
             fun req1(text:String) : Boolean{ return text.length >= 6 }
             reqs.add(PasswordRequirement(::req1,"Must have at least 6 length",required))
